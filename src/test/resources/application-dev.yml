@@ -1,0 +1,15 @@
+#spring:
+#  datasource:
+#    url: jdbc:postgresql://localhost:5432/guardlite
+#    username: guardlite
+#    password: guardlite
+#  jpa:
+#    hibernate.ddl-auto: validate
+#    properties.hibernate.jdbc.time_zone: UTC
+#  flyway.enabled: true
+#  mail.host: localhost
+#  mail.port: 1025 # (Mailhog später)
+#jwt:
+#  secret: "change-me-dev-secret"
+#scheduler:
+#  cron: "0 0 3 * * *" # daily 03:00

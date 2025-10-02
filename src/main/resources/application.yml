@@ -1,0 +1,28 @@
+spring:
+  application:
+    name: Guardlite
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        # UUID in H2 gut lesbar speichern:
+        type.preferred_uuid_jdbc_type: CHAR
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+# H2-Webkonsole aktivieren
+spring.h2.console.enabled: true
+spring.h2.console.path: /h2-console
+
+# JWT-Config
+jwt:
+  secret: "CHANGE_ME_TO_A_LONG_RANDOM_SECRET_KEY_MIN_32_CHARS"
+  ttlMillis: 86400000 # 24h in Millisekunden
