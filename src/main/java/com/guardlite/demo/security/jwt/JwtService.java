@@ -1,5 +1,6 @@
 package com.guardlite.demo.security.jwt;
 
+import com.guardlite.demo.entities.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.Jwts;
@@ -33,6 +34,20 @@ public class JwtService {
                 .setExpiration(new Date(now + ttlMillis))
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
+    }
+
+    public String generateToken(String username) {
+        return generate(username, Map.of()); // ohne extra Claims
+    }
+
+    public String generateToken(User user) {
+        return generate(
+                user.getUsername(),
+                Map.of(
+                        "uid", user.getId().toString(),
+                        "role", user.getRole().name()
+                )
+        );
     }
 
     public String extractUsername(String token) {
