@@ -1,9 +1,6 @@
 package com.guardlite.demo.entities;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Data;
 
 import java.time.Instant;
@@ -14,6 +11,7 @@ import java.util.UUID;
 @Data
 public class Check {
     @Id
+    @GeneratedValue
     UUID id;
     @ManyToOne
     Website website;
