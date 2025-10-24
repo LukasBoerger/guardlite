@@ -1,6 +1,7 @@
 package com.guardlite.demo.controller;
 
 import com.guardlite.demo.entities.Check;
+import com.guardlite.demo.entities.CheckResult;
 import com.guardlite.demo.repositories.CheckRepository;
 import com.guardlite.demo.repositories.CheckResultRepository;
 import com.guardlite.demo.repositories.WebsiteRepository;
@@ -72,6 +73,67 @@ public class CheckController {
         c.setLastRunAt(Instant.now());
         checks.save(c);
         return ResponseEntity.accepted().build();
+    }
+
+    @GetMapping("/checks/{id}/results")
+    public List<ResultRes> results(@AuthenticationPrincipal UserPrincipal me,
+                                   @PathVariable UUID id,
+                                   @RequestParam(defaultValue = "50") int limit,
+                                   @RequestParam(defaultValue = "0") int offset) {
+        var owner = users.findByEmail(me.getUsername()).orElseThrow();
+        var c = checks.findByIdAndWebsite_Owner_Id(id, owner.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+        return results.findAllByCheck_IdOrderByRunAtDesc(c.getId())
+                .stream().skip(offset).limit(limit)
+                .map(ResultRes::from).toList();
+    }
+
+    @PatchMapping("/checks/{id}")
+    public CheckRes update(@AuthenticationPrincipal UserPrincipal me, @PathVariable UUID id,
+                           @RequestBody UpdateCheckReq r) {
+        var owner = users.findByEmail(me.getUsername()).orElseThrow();
+        var c = checks.findByIdAndWebsite_Owner_Id(id, owner.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+        if (r.type() != null) c.setType(r.type());
+        if (r.cadenceCron() != null) {
+            if (!org.springframework.scheduling.support.CronExpression.isValidExpression(r.cadenceCron()))
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "invalid_cron");
+            c.setCadenceCron(r.cadenceCron());
+        }
+        if (r.enabled() != null) c.setEnabled(r.enabled());
+
+        checks.save(c);
+        return CheckRes.of(c);
+    }
+
+    @DeleteMapping("/checks/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@AuthenticationPrincipal UserPrincipal me, @PathVariable UUID id) {
+        var owner = users.findByEmail(me.getUsername()).orElseThrow();
+        var c = checks.findByIdAndWebsite_Owner_Id(id, owner.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        checks.delete(c);
+    }
+
+    public record ResultRes(Instant runAt, String status, Integer httpStatus, Integer durationMs, String error,
+                            String advice) {
+        static ResultRes from(CheckResult r) {
+            Integer s = null, d = null;
+            String e = null;
+            try {
+                var n = new com.fasterxml.jackson.databind.ObjectMapper().readTree(r.getPayloadJson());
+                s = n.path("httpStatus").isNumber() ? n.get("httpStatus").asInt() : null;
+                d = n.path("durationMs").isNumber() ? n.get("durationMs").asInt() : null;
+                e = n.path("error").isTextual() ? n.get("error").asText() : null;
+            } catch (Exception ignored) {
+            }
+            return new ResultRes(r.getRunAt(), r.getStatus(), s, d, e, r.getAdviceText());
+        }
+    }
+
+    public record UpdateCheckReq(String type, String cadenceCron, Boolean enabled) {
     }
 
     // DTOs

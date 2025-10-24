@@ -1,0 +1,13 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1
+  jpa:
+    hibernate:
+      ddl-auto: none
+  flyway:
+    enabled: true
+
+# fester Secret-Key nur für Tests (Base64, 256 bit)
+jwt:
+  secret: "k7m0G3j6nK3F2mS9yQ0vP8t5rV2xZ1a4lN7pQ0s8dF4hJ2k6oP9qR3uT7vW1yZ3+"
+  ttlMillis: 3600000

@@ -1,6 +1,7 @@
 package com.guardlite.demo.controller;
 
 import com.guardlite.demo.entities.Website;
+import com.guardlite.demo.repositories.CheckResultRepository;
 import com.guardlite.demo.repositories.WebsiteRepository;
 import com.guardlite.demo.security.UserPrincipal;
 import com.guardlite.demo.user.UserRepository;
@@ -18,6 +19,7 @@ import java.util.UUID;
 public class WebsiteController {
     private final WebsiteRepository websites;
     private final UserRepository users;
+    private final CheckResultRepository results;
 
 
     @PostMapping
@@ -42,6 +44,22 @@ public class WebsiteController {
         var owner = users.findByEmail(me.getUsername()).orElseThrow();
         return websites.findByOwner_Id(owner.getId()).stream().map(WebsiteRes::from).toList();
     }
+
+    @GetMapping("/websites/summary")
+    public List<WebsiteSummaryRes> summary(@AuthenticationPrincipal UserPrincipal me) {
+        var owner = users.findByEmail(me.getUsername()).orElseThrow();
+        var list = websites.findByOwner_Id(owner.getId());
+        return list.stream().map(w -> {
+            var latest = results.findLatestByWebsiteId(w.getId(), org.springframework.data.domain.PageRequest.of(0, 1));
+            var st = latest.isEmpty() ? "UNKNOWN" : latest.get(0).getStatus();
+            var at = latest.isEmpty() ? null : latest.get(0).getRunAt();
+            return new WebsiteSummaryRes(w.getId(), w.getUrl(), st, at);
+        }).toList();
+    }
+
+    public record WebsiteSummaryRes(UUID websiteId, String url, String currentStatus, Instant lastRunAt) {
+    }
+
 
     public record CreateWebsiteReq(String url, String cms, Boolean active) {
     }

@@ -9,6 +9,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 
@@ -23,6 +24,16 @@ public class ApiExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(ApiError.of(HttpStatus.UNAUTHORIZED, "invalid_credentials",
                         "E-Mail oder Passwort ist falsch.", req));
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ApiError> handleRse(ResponseStatusException ex,
+                                              HttpServletRequest req) {
+        // Kein 500 erzeugen – Status & Reason übernehmen
+        var status = ex.getStatusCode();
+        var code = ex.getReason() != null ? ex.getReason() : status.toString();
+        return ResponseEntity.status(status)
+                .body(ApiError.of(HttpStatus.INTERNAL_SERVER_ERROR, code, ex.getReason(), req));
     }
 
     @ExceptionHandler(EmailAlreadyExistsException.class)
@@ -40,8 +51,7 @@ public class ApiExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> handleOther(Exception ex, HttpServletRequest req) {
-        log.error("Unhandled error on {} {}",
-                req.getMethod(), req.getRequestURI(), ex);  // <- Stacktrace ins Log
+        log.error("Unhandled error on {} {}", req.getMethod(), req.getRequestURI(), ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiError.of(HttpStatus.INTERNAL_SERVER_ERROR, "internal_error", "Unerwarteter Fehler.", req));
     }
